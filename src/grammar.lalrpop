@@ -1,0 +1,12 @@
+use std::str::FromStr;
+use ast::{ProductionChain, ProductionBlock};
+
+grammar;
+
+pub dataFile: ProductionChain = {
+    <garbage> "{" "}" <garbage> => t,
+};
+
+Num: i32 = <s:r"[0-9]+"> => i32::from_str(s).unwrap();
+garbage: () = r"[^{}]*" => ();
+
