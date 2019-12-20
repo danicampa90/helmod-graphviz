@@ -1,12 +1,36 @@
 use std::str::FromStr;
-use ast::{ProductionChain, ProductionBlock};
+use std::string::String;
+use crate::ast::{LuaObject, LuaValue, LuaProperty};
 
 grammar;
 
-pub dataFile: ProductionChain = {
-    <garbage> "{" "}" <garbage> => t,
+pub Object: LuaObject = {
+    "{" <props:(<property> ",")*> <lastprop:property?> "}" => match lastprop {
+    	None => LuaObject::new(props),
+	Some(p) => {
+	    let mut props = props;
+	    props.push(p);
+	    LuaObject::new(props)
+	}
+     },
 };
 
-Num: i32 = <s:r"[0-9]+"> => i32::from_str(s).unwrap();
-garbage: () = r"[^{}]*" => ();
+value : LuaValue = {
+    <n:Num> => LuaValue::Number(n),
+    <s:String> => LuaValue::String(s),
+    <o:Object> => LuaValue::Object(o),
+    ! => { panic!(format!("{:?}", <>))},
+}
 
+property: LuaProperty = {
+    <i:Identifier> "=" <v:value> => LuaProperty::new(i, v),
+};
+
+
+
+Num: String = <s:r"[0-9.-]+"> => s.to_string();
+Identifier: String = <s:r#"[a-zA-Z_][a-zA-Z0-9_]*"#> => s.to_string();
+ObjectStart: () = r"\{";
+ObjectEnd: () = r"\}";
+ListSeparator: () = r",";
+String: String = <s:r#""[^"]*""#> => s.to_string();
