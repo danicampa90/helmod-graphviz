@@ -20,7 +20,26 @@ fn main() {
     file.read_to_string(&mut contents).unwrap();
 
     let parsed = grammar::ObjectParser::new().parse(&contents);
-    let prodChain: Result<ProductionChain, ConversionError> =
+    let prod_chain: Result<ProductionChain, ConversionError> =
         (&parsed.expect("Parse error")).try_into();
-    println!("{:?}", prodChain);
+    println!("{:?}", prod_chain);
+    let prod_chain = prod_chain.expect("Convert error");
+
+    for prod_block in prod_chain.blocks {
+        println!("######### {}({:.2})", prod_block.name, prod_block.count);
+        print!("From: ");
+        for (name, count) in prod_block.ingredients {
+            print!("{}({:.2}), ", name, count);
+        }
+        println!();
+        for prod_recipe in prod_block.recipes {
+            println!(
+                "- {} ({:.2}) - [made in {}x {}]",
+                prod_recipe.name,
+                prod_recipe.output_count,
+                (prod_recipe.factory_count.ceil() as i32),
+                prod_recipe.factory_name
+            );
+        }
+    }
 }

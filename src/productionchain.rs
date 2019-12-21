@@ -15,7 +15,7 @@ pub struct ProductionBlock {
     pub id: String,
     pub name: String,
     pub count: f64,
-    pub ingredients: Vec<(String, i32)>,
+    pub ingredients: Vec<(String, f64)>,
     pub recipes: Vec<ProductionRecipe>,
 }
 
@@ -25,13 +25,10 @@ pub struct ProductionRecipe {
     pub name: String,
     pub type_: String,
     pub output_count: f64,
-    pub speed: f64,
     // factory stuff
     pub factory_name: String,
     pub factory_count: f64,
     pub factory_speed: f64,
-    pub modules: Vec<()>,
-    pub beacons: Vec<()>,
 }
 
 impl ProductionChain {}
