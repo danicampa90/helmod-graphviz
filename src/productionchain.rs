@@ -1,9 +1,16 @@
+mod productionchainparser;
+pub use productionchainparser::ConversionError;
+
+type ItemQtyList = Vec<(String, f64)>;
+
+#[derive(Debug)]
 pub struct ProductionChain {
-    pub id: String,
-    pub owner: String,
+    pub products: Vec<(String, f64)>,
+    pub ingredients: Vec<(String, f64)>,
     pub blocks: Vec<ProductionBlock>,
 }
 
+#[derive(Debug)]
 pub struct ProductionBlock {
     pub id: String,
     pub name: String,

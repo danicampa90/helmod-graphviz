@@ -28,10 +28,19 @@ pub enum LuaValue {
     Array(LuaArray),
 }
 
+#[derive(Debug)]
 pub enum CastError {
     NotAString(LuaValue),
     NotAnInteger(LuaValue),
     NotAFloat(LuaValue),
+    NotAnArray(LuaValue),
+}
+
+#[derive(Debug)]
+pub enum IndexingError {
+    FieldNotExists(LuaValue),
+    FieldNotExistsStr(String),
+    IndexOutOfRange(usize, usize), // (accessed, total)
 }
 
 //// Impls
@@ -40,13 +49,40 @@ impl LuaObject {
         LuaObject { props: properties }
     }
 
-    pub fn get<'a>(&'a self, val: &LuaValue) -> Option<&'a LuaValue> {
+    pub fn get<'a>(&'a self, val: &LuaValue) -> Result<&LuaValue, IndexingError> {
         for prop in &self.props {
             if prop.key == *val {
-                return Some(&prop.value);
+                return Ok(&prop.value);
             }
         }
-        return None;
+        return Err(IndexingError::FieldNotExists(val.clone()));
+    }
+
+    pub fn get_with_str(&self, val: String) -> Result<&LuaValue, IndexingError> {
+        match self.get(&LuaValue::Identifier(val.clone())) {
+            Ok(x) => return Ok(x),
+            _ => (),
+        }
+        match self.get(&LuaValue::String(val.clone())) {
+            Ok(x) => return Ok(x),
+            _ => (),
+        }
+        match self.get(&LuaValue::Array(LuaArray::from_single_string(val.clone()))) {
+            Ok(x) => return Ok(x),
+            _ => (),
+        }
+        return Err(IndexingError::FieldNotExistsStr(val));
+    }
+
+    pub fn iterkeys(&self) -> impl Iterator<Item = &LuaValue> {
+        self.props.iter().map(|v| &v.key)
+    }
+    pub fn itervalues(&self) -> impl Iterator<Item = &LuaValue> {
+        self.props.iter().map(|v| &v.value)
+    }
+
+    pub fn iteritems(&self) -> impl Iterator<Item = &LuaProperty> {
+        self.props.iter()
     }
 }
 
@@ -62,13 +98,6 @@ impl LuaValue {
         }
     }
 
-    pub fn as_string(&self) -> Result<String, CastError> {
-        match self {
-            LuaValue::String(x) => Ok(x.clone()),
-            _ => Err(CastError::NotAString(self.clone())),
-        }
-    }
-
     pub fn as_float(&self) -> Result<f64, CastError> {
         match self {
             LuaValue::Number(x) => {
@@ -78,19 +107,40 @@ impl LuaValue {
         }
     }
 
-    pub fn as_string_array(&self) -> Result<Vec<String>, CastError> {
+    pub fn as_string(&self) -> Result<&String, CastError> {
+        match self {
+            LuaValue::String(x) => Ok(x),
+            _ => Err(CastError::NotAString(self.clone())),
+        }
+    }
+
+    pub fn as_string_array(&self) -> Result<Vec<&String>, CastError> {
         match self {
             LuaValue::Array(input) => {
                 let mut out = vec![];
                 for item in &input.vals {
                     match item {
-                        LuaValue::String(s) => out.push(s.clone()),
+                        LuaValue::String(s) => out.push(s),
                         _ => return Err(CastError::NotAString(item.clone())),
                     }
                 }
                 return Ok(out);
             }
-            _ => return Err(CastError::NotAString(self.clone())),
+            _ => return Err(CastError::NotAnArray(self.clone())),
+        }
+    }
+
+    pub fn as_array(&self) -> Result<&LuaArray, CastError> {
+        match self {
+            LuaValue::Array(x) => Ok(&x),
+            _ => Err(CastError::NotAnArray(self.clone())),
+        }
+    }
+
+    pub fn as_object(&self) -> Result<&LuaObject, CastError> {
+        match self {
+            LuaValue::Object(x) => Ok(&x),
+            _ => Err(CastError::NotAnArray(self.clone())),
         }
     }
 }
@@ -100,8 +150,14 @@ impl LuaArray {
         LuaArray { vals: values }
     }
 
-    pub fn get<'a>(&'a self, idx: usize) -> Option<&'a LuaValue> {
-        self.vals.get(idx)
+    pub fn get<'a>(&'a self, idx: usize) -> Result<&'a LuaValue, IndexingError> {
+        self.vals
+            .get(idx)
+            .ok_or(IndexingError::IndexOutOfRange(idx, self.vals.len()))
+    }
+
+    pub fn from_single_string(s: String) -> LuaArray {
+        Self::new(vec![LuaValue::String(s)])
     }
 }
 

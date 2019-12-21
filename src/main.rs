@@ -6,7 +6,10 @@ extern crate lalrpop_util;
 lalrpop_mod!(pub grammar);
 mod ast;
 mod grammar_tests;
+mod productionchain;
 
+use productionchain::{ConversionError, ProductionChain};
+use std::convert::TryInto;
 use std::fs::File;
 use std::io::prelude::*;
 use std::string::String;
@@ -17,5 +20,7 @@ fn main() {
     file.read_to_string(&mut contents).unwrap();
 
     let parsed = grammar::ObjectParser::new().parse(&contents);
-    println!("{:?}", parsed);
+    let prodChain: Result<ProductionChain, ConversionError> =
+        (&parsed.expect("Parse error")).try_into();
+    println!("{:?}", prodChain);
 }
