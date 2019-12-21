@@ -1,6 +1,5 @@
-use std::str::FromStr;
 use std::string::String;
-use crate::ast::{LuaObject, LuaValue, LuaProperty};
+use crate::ast::{LuaObject, LuaValue, LuaProperty, LuaArray};
 
 grammar;
 
@@ -15,15 +14,29 @@ pub Object: LuaObject = {
      },
 };
 
+pub Array: LuaArray = {
+    "[" <vals:(<value> ",")*> <lastval:value?> "]" => match lastval {
+    	None => LuaArray::new(vals),
+	Some(p) => {
+	    let mut vals = vals;
+	    vals.push(p);
+	    LuaArray::new(vals)
+	}
+     },
+};
+
+
 value : LuaValue = {
     <n:Num> => LuaValue::Number(n),
     <s:String> => LuaValue::String(s),
     <o:Object> => LuaValue::Object(o),
+    <a:Array> => LuaValue::Array(a),
+    <i:Identifier> => LuaValue::Identifier(i),
     ! => { panic!(format!("{:?}", <>))},
 }
 
 property: LuaProperty = {
-    <i:Identifier> "=" <v:value> => LuaProperty::new(i, v),
+    <i:value> "=" <v:value> => LuaProperty::new(i, v),
 };
 
 
