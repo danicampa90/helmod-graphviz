@@ -1,26 +1,27 @@
 use serde_json::Value;
+use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 
-struct IngredientProductInfo {
-    type_: String,
-    name: String,
-    amount: Option<f64>,
-    amount_min: Option<f64>,
-    amount_max: Option<f64>,
-    probability: Option<f64>,
+pub struct IngredientProductInfo {
+    pub type_: String,
+    pub name: String,
+    pub amount: Option<f64>,
+    pub amount_min: Option<f64>,
+    pub amount_max: Option<f64>,
+    pub probability: Option<f64>,
 }
 
-struct Recipe {
-    id: String,
-    category: String,
-    energy: f64,
-    ingredients: Vec<IngredientProductInfo>,
-    products: Vec<IngredientProductInfo>,
+pub struct Recipe {
+    pub id: String,
+    pub category: String,
+    pub energy: f64,
+    pub ingredients: Vec<IngredientProductInfo>,
+    pub products: Vec<IngredientProductInfo>,
 }
 
 pub struct RecipeDatabase {
-    recipes: Vec<Recipe>,
+    pub recipes: HashMap<String, Recipe>,
 }
 #[derive(Debug)]
 pub enum JSONParsingError {
@@ -28,7 +29,13 @@ pub enum JSONParsingError {
     InvalidType(&'static str),
 }
 
-// : Value = serde_json::from_str
+impl RecipeDatabase {
+    pub fn get_recipe(&self, id: &String) -> Option<&Recipe> {
+        self.recipes.get(id)
+    }
+}
+
+// TryFrom implementations
 
 impl TryFrom<&Value> for Recipe {
     type Error = JSONParsingError;
@@ -102,9 +109,10 @@ impl TryFrom<&Value> for RecipeDatabase {
         let recipes_map = root.as_object().ok_or(JSONParsingError::InvalidType(
             "<root object is not an object?>",
         ))?;
-        let mut result = vec![];
+        let mut result: HashMap<String, Recipe> = HashMap::new();
         for recipe_node in recipes_map.values() {
-            result.push(recipe_node.try_into()?);
+            let recipe: Recipe = recipe_node.try_into()?;
+            result.insert(recipe.id.clone(), recipe);
         }
         return Ok(RecipeDatabase { recipes: result });
     }

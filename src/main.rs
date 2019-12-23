@@ -17,6 +17,7 @@ use std::io::prelude::*;
 use std::string::String;
 
 fn main() {
+    // recipes
     let mut file = File::open("recipe.json").unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
@@ -24,6 +25,7 @@ fn main() {
         serde_json::from_str(&contents).expect("JSON Parsing error in recipe.json");
     let recipes: RecipeDatabase = (&recipes_json).try_into().unwrap();
 
+    // helmod
     let mut file = File::open("test.txt").unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
@@ -31,9 +33,9 @@ fn main() {
     let parsed = grammar::ObjectParser::new().parse(&contents);
     let prod_chain: Result<ProductionChain, ConversionError> =
         (&parsed.expect("Parse error")).try_into();
-    println!("{:?}", prod_chain);
     let prod_chain = prod_chain.expect("Convert error");
 
+    // debug print
     for prod_block in prod_chain.blocks {
         println!("######### {}({:.2})", prod_block.name, prod_block.count);
         print!("From: ");
@@ -49,6 +51,21 @@ fn main() {
                 (prod_recipe.factory_count.ceil() as i32),
                 prod_recipe.factory_name
             );
+
+            match (recipes.get_recipe(&prod_recipe.name)) {
+                Some(recipe) => {
+                    print!("    Found a recipe: ");
+                    for ingr in &recipe.ingredients {
+                        print!("<{}>", ingr.name);
+                    }
+                    print!("-->");
+                    for ingr in &recipe.products {
+                        print!("<{}>", ingr.name);
+                    }
+                    println!("")
+                }
+                None => println!("    No recipe found"),
+            }
         }
     }
 }
