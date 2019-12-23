@@ -77,6 +77,7 @@ impl LuaObject {
     pub fn iterkeys(&self) -> impl Iterator<Item = &LuaValue> {
         self.props.iter().map(|v| &v.key)
     }
+
     pub fn itervalues(&self) -> impl Iterator<Item = &LuaValue> {
         self.props.iter().map(|v| &v.value)
     }

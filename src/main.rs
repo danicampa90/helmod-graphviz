@@ -5,6 +5,7 @@ extern crate lalrpop_util;
 // modules
 lalrpop_mod!(pub grammar);
 mod ast;
+mod dot_writer;
 mod grammar_tests;
 mod productionchain;
 mod recipes;
@@ -35,6 +36,11 @@ fn main() {
         (&parsed.expect("Parse error")).try_into();
     let prod_chain = prod_chain.expect("Convert error");
 
+    dot_writer::write_dot_files(prod_chain, recipes);
+    //debug_print(prod_chain, recipes);
+}
+
+fn debug_print(prod_chain: ProductionChain, recipes: RecipeDatabase) {
     // debug print
     for prod_block in prod_chain.blocks {
         println!("######### {}({:.2})", prod_block.name, prod_block.count);
