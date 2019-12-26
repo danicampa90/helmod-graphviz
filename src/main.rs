@@ -18,26 +18,71 @@ use std::io::prelude::*;
 use std::string::String;
 
 fn main() {
-    // recipes
-    let mut file = File::open("recipe.json").unwrap();
+    let recipes = parse_recipes("recipe.json");
+    let prod_chain = parse_helmod("test.txt");
+
+    if !recipes.is_ok() || !prod_chain.is_ok() {
+        eprintln!("Encountered an error. Exiting.");
+        return;
+    }
+
+    let recipes = recipes.unwrap();
+    let prod_chain = prod_chain.unwrap();
+    dot_writer::write_dot_files(prod_chain, recipes);
+}
+
+fn parse_recipes(filename: &str) -> Result<RecipeDatabase, ()> {
+    let mut file = File::open(filename).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
-    let recipes_json: serde_json::Value =
-        serde_json::from_str(&contents).expect("JSON Parsing error in recipe.json");
-    let recipes: RecipeDatabase = (&recipes_json).try_into().unwrap();
+    let recipes_json: Result<serde_json::Value, serde_json::Error> =
+        serde_json::from_str(&contents);
 
+    match recipes_json {
+        Ok(recipes_json) => {
+            let recipes_result = (&recipes_json).try_into();
+            match (recipes_result) {
+                Ok(recipes) => return Ok(recipes),
+                Err(err) => {
+                    eprintln!("ERROR: {:?}", err);
+                    return Err(());
+                }
+            }
+        }
+
+        Err(err) => {
+            eprintln!("ERROR: {:?}", err);
+            return Err(());
+        }
+    }
+}
+
+fn parse_helmod(filename: &str) -> Result<ProductionChain, ()> {
     // helmod
-    let mut file = File::open("test.txt").unwrap();
+    let mut file = File::open(filename).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
 
     let parsed = grammar::ObjectParser::new().parse(&contents);
-    let prod_chain: Result<ProductionChain, ConversionError> =
-        (&parsed.expect("Parse error")).try_into();
-    let prod_chain = prod_chain.expect("Convert error");
+    match parsed {
+        Err(err) => {
+            eprintln!("ERROR: {:?}", err);
+            return Err(());
+        }
+        _ => (),
+    }
 
-    dot_writer::write_dot_files(prod_chain, recipes);
-    //debug_print(prod_chain, recipes);
+    let parsed = parsed.unwrap();
+
+    let prod_chain: Result<ProductionChain, ConversionError> = (&parsed).try_into();
+
+    match prod_chain {
+        Err(err) => {
+            eprintln!("ERROR: {:?}", err);
+            return Err(());
+        }
+        Ok(prodchain) => return Ok(prodchain),
+    }
 }
 
 fn debug_print(prod_chain: ProductionChain, recipes: RecipeDatabase) {
