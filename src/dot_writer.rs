@@ -52,10 +52,6 @@ pub fn write_dot_files(prod_chain: ProductionChain, recipes: RecipeDatabase) {
             );
             item_declarator.declare_ingr(&mut file, &name);
         }
-        /*
-            for (name, count) in prod_block.products {
-                print!(r#"  input -> "{0}" [color="grey", label="{0}*{1}"]"#, name, count);
-        }*/
 
         writeln!(file, r"");
         for prod_recipe in prod_block.recipes {
@@ -102,7 +98,11 @@ pub fn write_dot_files(prod_chain: ProductionChain, recipes: RecipeDatabase) {
         }
         writeln!(file, r#"}}"#);
     }
+    generate_makefile(count);
+}
 
+/// Generates Makefile for the generated DOT files
+fn generate_makefile(count: i32) {
     let mut makefile = OpenOptions::new()
         .write(true)
         .create(true)

@@ -18,19 +18,44 @@ use std::io::prelude::*;
 use std::string::String;
 
 fn main() {
-    let recipes = parse_recipes("recipe.json");
-    let prod_chain = parse_helmod("test.txt");
+    let cmdline_args = get_cmdline_args();
+
+    let recipes = parse_recipes(cmdline_args.value_of("recipes").unwrap());
+    let prod_chain = parse_helmod(cmdline_args.value_of("helmod").unwrap());
 
     if !recipes.is_ok() || !prod_chain.is_ok() {
         eprintln!("Encountered an error. Exiting.");
         return;
     }
 
+    print!("Generating dot files...");
     let recipes = recipes.unwrap();
     let prod_chain = prod_chain.unwrap();
     dot_writer::write_dot_files(prod_chain, recipes);
+    println!("Done");
 }
 
+fn get_cmdline_args() -> clap::ArgMatches<'static> {
+    clap::App::new("Helmod to graphviz dot exporter")
+                          .version("1.0")
+                          .author("Daniele C. <danicampa90 AT gmail.com>")
+                          .about("Parses an exported production block, the list of recipes from recipes.json and generates a graph in graphviz dot format of the flow of materials.")
+                          .arg(clap::Arg::with_name("recipes")
+                               .short("r")
+                               .long("recipes")
+                               .value_name("FILE")
+                               .help("Indicates where to find the recipes.json file containing all the recipes")
+                               .takes_value(true)
+                               .required(true))
+                          .arg(clap::Arg::with_name("helmod")
+                               .help("h")
+                               .long("helmod")
+                               .value_name("FILE")
+                               .help("Indicates where to find the exported helmod production chain")
+                               .required(true)).get_matches()
+}
+
+/// Parses recipes.json and returns the recipe representation
 fn parse_recipes(filename: &str) -> Result<RecipeDatabase, ()> {
     let mut file = File::open(filename).unwrap();
     let mut contents = String::new();
@@ -57,6 +82,7 @@ fn parse_recipes(filename: &str) -> Result<RecipeDatabase, ()> {
     }
 }
 
+/// Parses an string exported from helmod mod, and produces a production chain representation.
 fn parse_helmod(filename: &str) -> Result<ProductionChain, ()> {
     // helmod
     let mut file = File::open(filename).unwrap();
@@ -85,6 +111,8 @@ fn parse_helmod(filename: &str) -> Result<ProductionChain, ()> {
     }
 }
 
+/// Prints some quick representation from the production chain and recipe database in string format.
+#[cfg(Debug)]
 fn debug_print(prod_chain: ProductionChain, recipes: RecipeDatabase) {
     // debug print
     for prod_block in prod_chain.blocks {
