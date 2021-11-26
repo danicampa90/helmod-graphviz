@@ -98,7 +98,7 @@ pub fn write_dot_files(prod_chain: ProductionChain, recipes: RecipeDatabase) {
         }
         writeln!(file, r#"}}"#);
     }
-    generate_makefile(count);
+    //generate_makefile(count);
 }
 
 /// Generates Makefile for the generated DOT files

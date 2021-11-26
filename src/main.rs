@@ -16,6 +16,8 @@ use std::convert::TryInto;
 use std::fs::File;
 use std::io::prelude::*;
 use std::string::String;
+use base64;
+use flate2::read::GzDecoder;
 
 fn main() {
     let cmdline_args = get_cmdline_args();
@@ -85,9 +87,21 @@ fn parse_recipes(filename: &str) -> Result<RecipeDatabase, ()> {
 /// Parses an string exported from helmod mod, and produces a production chain representation.
 fn parse_helmod(filename: &str) -> Result<ProductionChain, ()> {
     // helmod
+
+    // read the content of the file into a string
     let mut file = File::open(filename).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
+    let contents = contents.replace(" ","").replace("\n", "");
+    // base64 decode that
+    let contents = base64::decode(contents);
+    let contents = contents.unwrap();
+    // gunzip it
+    let mut contents_str = String::new();
+    GzDecoder::new(&contents[..]).read_to_string(&mut contents_str).unwrap();
+    let contents = remove_initial_assignment(&contents_str);
+    println!("{:?}", contents);
+    
 
     let parsed = grammar::ObjectParser::new().parse(&contents);
     match parsed {
@@ -109,6 +123,12 @@ fn parse_helmod(filename: &str) -> Result<ProductionChain, ()> {
         }
         Ok(prodchain) => return Ok(prodchain),
     }
+}
+
+fn remove_initial_assignment(s: &str) -> &str {
+    return s
+        .trim_start_matches("do local _=")
+        .trim_end_matches(";return _;end")
 }
 
 /// Prints some quick representation from the production chain and recipe database in string format.
